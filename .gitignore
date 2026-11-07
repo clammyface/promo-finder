@@ -1,0 +1,22 @@
+# Kuku's input pack is confidential: never commit scripts
+data/
+*.zip
+*.txt
+*.srt
+*.vtt
+!requirements.txt
+# secrets and caches
+.env
+.cache/
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+# Raw outputs quote the scripts (clip transcripts), so they are shared via a
+# private link, not committed to a public repo
+outputs/
+# the brief itself and editor settings
+Kuku*.pdf
+.vscode/
+docs/solution.html
+docs/solution.pdf
+docs/doc_meta.json

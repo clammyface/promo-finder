@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Promo Finder: solution doc</title>
+<link rel="stylesheet" href="solution.css">
+</head>
+<body>
+
+<!-- ============================================================== header -->
+<header class="top">
+  <div class="kicker">Kuku FM · AI Generalist assignment · Problem 1: Find the promos</div>
+  <div class="titlerow">
+    <h1>Promo Finder</h1>
+    <div class="chips">$link_chips</div>
+  </div>
+  <p class="sub">I built a tool that reads a show's screenplays and hands an editor a ranked shortlist of 20–60 second
+  promos: exact cut points for every segment, the hook, the cliffhanger, and why each one should work.</p>
+  <div class="byline"><b>$name</b> &nbsp;·&nbsp; Input pack: <i>$show</i> ($episodes episodes, $minutes min)</div>
+  <nav class="toc"><span>Jump to</span>
+    <a href="#idea">1 The idea</a><a href="#how">2 How it works</a><a href="#cost">3 Scale &amp; cost</a>
+    <a href="#found">4 What it found</a><a href="#quality">5 Is it any good?</a><a href="#ai">6 AI tools</a></nav>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>$episodes</b><span>episodes read</span><small>$minutes min of script, end to end</small></div>
+  <div class="stat"><b>$n_promos</b><span>distinct promos</span><small>$n_llm by the LLM · $n_rules by rules · $n_trailers trailer</small></div>
+  <div class="stat"><b>$n_promos/$n_promos</b><span>pass the timing rules</span><small>$dur_min–$dur_max s, checked in code</small></div>
+  <div class="stat"><b>$top_score/10</b><span>best clip, blind judge</span><small>$n_post of $n_judged rated "post it"</small></div>
+  <div class="stat"><b>$$$cost</b><span>whole show, paid</span><small>$$0 on the free tiers I used</small></div>
+  <div class="stat"><b>1</b><span>command per new show</span><small>the model is just a flag</small></div>
+</div>
+
+<!-- ============================================================== 1 idea -->
+<h2 id="idea"><span class="n">1</span>The idea</h2>
+<div class="three">
+  <div class="card"><h3>The problem</h3>
+    <p>Every new show needs promos, and picking them means an editor watching all of it: about 100 minutes a show,
+    every week. Yet the rules are checkable. A clip is 20–60 s or it isn't; the hook lands in 3 s or it doesn't.</p></div>
+  <div class="card"><h3>What I built</h3>
+    <p><b>In:</b> a zip of episode scripts. <b>Out:</b> ranked promos, each with the episode and start/end of every
+    segment in order, the hook, the cliffhanger and one line on why it works. Plus an app where the editor approves or rejects.</p></div>
+  <div class="card"><h3>Why Problem 1</h3>
+    <p>It comes back with every show, and quality is measurable, so the hard rules can live in plain code and AI only
+    has to supply taste. Problem 2 carries real legal risk; Problem 3 needs viewer research I couldn't do well in two days.</p></div>
+</div>
+<div class="assume"><span class="lab">What I assumed</span>
+  <span class="chip"><b>Script time = edit time</b>; cuts snap to shot changes</span>
+  <span class="chip"><b>Viewer = genre fan,</b> not a random scroller</span>
+  <span class="chip"><b>Hook</b> in 0–3 s; <b>cliffhanger</b> = cut ≤4 s after an open question</span>
+  <span class="chip"><b>Early episodes count more:</b> tappers start at ep 1</span>
+  <span class="chip"><b>Spoilers OK:</b> the title says "He was a Duke"</span>
+</div>
+
+<!-- ============================================================== 2 how -->
+<h2 id="how"><span class="n">2</span>How it works <span class="aside">one command: <code>python -m promo_finder show.zip</code></span></h2>
+<div class="flow">
+  <div class="step"><em>code</em><b>Parse</b><small>every script line gets an ID (B17) and exact times</small></div>
+  <div class="arr"></div>
+  <div class="col2">
+    <div class="step ai"><em>AI · 1 call/episode</em><b>Scout</b><small>reads the episode, picks up to 3 promos</small></div>
+    <div class="step rules"><em>rules · free</em><b>Keyword scorer</b><small>slaps, blood, "!", angry delivery notes</small></div>
+  </div>
+  <div class="arr"></div>
+  <div class="step"><em>code</em><b>Check + fix</b><small>20–60 s, hook in 3 s, cut on the cliffhanger. $n_repaired fixed by AI, $n_autofixed by code</small></div>
+  <div class="arr"></div>
+  <div class="step ai"><em>AI · 1 call</em><b>Trailers</b><small>stitches moments across episodes</small></div>
+  <div class="arr"></div>
+  <div class="step ai"><em>2nd AI · 1/clip</em><b>Blind judge</b><small>sees only the clip, as a fan new to the show</small></div>
+  <div class="arr"></div>
+  <div class="step"><em>code</em><b>Rank</b><small>judge scores + early-episode bonus; duplicates folded</small></div>
+  <div class="arr"></div>
+  <div class="step hum"><em>human</em><b>Editor</b><small>approves or rejects in the app; notes go to a CSV</small></div>
+</div>
+<div class="legend"><span><i style="background:var(--llm)"></i>AI model</span><span><i style="background:var(--rules)"></i>Keyword rules</span>
+  <span><i style="background:var(--muted)"></i>Plain code</span><span><i style="background:var(--ink)"></i>Human</span></div>
+
+<div class="four">
+  <div class="card dec"><h3>The AI never types a timestamp</h3>
+    <p>It points at line IDs; code works out the times and lengths. So there are no invented timestamps, and no
+    "45 s" clip that is really 70.</p></div>
+  <div class="card dec"><h3>Rules in code, taste in the model</h3>
+    <p>A broken pick goes back to the model once with the exact error. If that fails, code re-cuts it like an editor
+    would. That's how ep 41's explosion, cut at 15 s, became promo #2.</p></div>
+  <div class="card dec"><h3>A different model judges, blind</h3>
+    <p>The scout can't grade itself: it rated almost every pick 8–10. So gpt-oss-120b watches each clip from 00:00 as
+    a genre fan who has never seen the show.</p></div>
+  <div class="card dec"><h3>Swap the model with one flag</h3>
+    <p>Any OpenAI-compatible API (<code>--provider</code>, <code>--model</code>, <code>--base-url</code>). It falls back
+    when a free quota runs out, and caches every call, so a re-run takes seconds.</p></div>
+</div>
+
+<h3 class="k">What comes out: one promo, exactly as the tool outputs it</h3>
+$anatomy
+
+<!-- ============================================================== 3 cost -->
+<h2 id="cost"><span class="n">3</span>Scale and cost</h2>
+<div class="costrow">
+  <div class="mini"><b>$n_calls</b><small>model calls: $scout_calls scout, $repair_calls repair, $judge_calls judge, $other_calls other</small></div>
+  <div class="mini"><b>$tokens_k k</b><small>tokens for the whole show</small></div>
+  <div class="mini"><b>~$$$cost</b><small>at paid list prices, so a new show a week costs almost nothing</small></div>
+  <div class="mini"><b>~$free_min min</b><small>of Groq free-tier budget at 8,000 tokens/min (a few minutes on paid)</small></div>
+</div>
+<div class="two">
+  <p>No free model's daily cap (~200k tokens) covers a show (~$scout_k k scout tokens), so the tool switches to the next
+  model when one runs out: Qwen 3.8 scouted $n_qwen episodes, gpt-oss-20b the other $n_oss. The real saving is editor
+  time: reading ~10 shortlisted clips instead of watching 100 minutes. <b>With a paid API</b> I'd add a video model
+  that watches the rendered episode, to check the hook lands on screen and the timestamps match the edit.</p>
+  <div class="measure"><span class="lab">How I'd know it works with a real team</span><br>
+    <span class="chip">% of top 10 the editor approves</span><span class="chip">editor minutes per show</span>
+    <span class="chip">3-second hold rate</span><span class="chip">CTR, installs per 1k views</span>
+    <span class="chip">A/B vs editor-only picks</span></div>
+</div>
+
+<!-- ============================================================== 4 found -->
+<h2 id="found"><span class="n">4</span>What it found <span class="aside">all $n_promos promos are in <code>report.md</code> and <code>promos_ranked.csv</code> in the raw outputs</span></h2>
+
+<h3 class="k">The top 5, as ranked by the tool</h3>
+<table class="top5">
+  <colgroup><col class="c-rk"><col class="c-ttl"><col class="c-seg"><col class="c-len"><col class="c-hook"><col class="c-cut"><col class="c-why"><col class="c-sc"></colgroup>
+  <tr><th>#</th><th>Promo</th><th>Segments, in order</th><th>Len</th><th>Opens on (0–3 s)</th><th>Cuts on</th>
+      <th>Why it works (blind viewer)</th><th>Judge</th></tr>
+  $top_rows
+</table>
+
+<h3 class="k">Which I'd post first: the tool's order, with my changes</h3>
+<div class="plan">
+  <div class="pc"><span class="when">Post first</span><b>#1 Riding-crop strike · ep 24</b>
+    <small>A strike in the first second, then "Do you want the same punishment?"</small></div>
+  <div class="arr"></div>
+  <div class="pc"><span class="when">Move up</span><b>#6 Altar rejection · ep 2</b>
+    <small>Starts the story right where a new viewer lands, so the tap pays off at once.</small></div>
+  <div class="arr"></div>
+  <div class="pc"><span class="when">Week two</span><b>#2 Cathedral explosion · ep 41</b>
+    <small>The biggest spectacle, but 40 episodes from where a new viewer starts.</small></div>
+  <div class="arr"></div>
+  <div class="pc hold"><span class="when">Hold: after #6, or re-cut</span><b>#5 "Gerald Harrington paid us!" · ep 16</b>
+    <small>Only lands once you know Gerald is the groom who dumped her at the altar in #6.</small></div>
+</div>
+
+<!-- ============================================================== 5 quality -->
+<h2 id="quality"><span class="n">5</span>How I know it's good, and where it isn't</h2>
+<div class="qgrid">
+  <div class="card q"><h3>Hard rules: checked in code</h3>
+    <div class="big">$n_promos/$n_promos</div>
+    <p>pass the length, hook and cliffhanger checks. $n_rejected picks still failed after both fixes and were thrown
+    out, with the reason logged in <code>rejected.json</code>.</p></div>
+  <div class="card q"><h3>LLM vs keyword rules · same blind judge · $ev_n episodes</h3>
+    $wtl_bar
+    <div class="legend" style="margin:0 0 3px"><span><i style="background:var(--llm)"></i>LLM's pick better</span>
+      <span><i style="background:var(--tie)"></i>tie</span><span><i style="background:var(--rules)"></i>rules' pick better</span></div>
+    <p><b>The result I didn't expect:</b> $ev_llm vs $ev_base out of 10, a tie. The scripts are full of "!" and delivery
+    notes ("Screaming, Desperate"), so simple rules find the hot stretches. So the rules became a second proposer
+    instead of a strawman: $top10_rules of the top 10 are theirs.</p></div>
+  <div class="card q"><h3>My own read of the top 10, against the script</h3>
+    $strip
+    <div class="legend" style="margin:1px 0 3px"><span>✓ post</span><span>✂ re-cut</span><span>≈ repeat</span><span>L/R = LLM/rules</span></div>
+    <p>$n_ok I'd post as they are. #5 needs a name the viewer doesn't know; #9 runs 58 s and leans on backstory;
+    #10 repeats part of #9.</p></div>
+</div>
+
+<h3 class="k">Where it picks badly</h3>
+<div class="fails">
+  <div class="fail"><b>Cuts too late</b><span>Ep 5: both tools found the stepmother throwing the dead mother's ledger in the
+    mud, but the LLM ran 19 s on into the comforting reply (judge 3, rules' cut 7).</span></div>
+  <div class="fail"><b>Leans on names</b><span>#5's cliffhanger needs backstory, and the blind judge didn't flag it.</span></div>
+  <div class="fail"><b>Same scene twice</b><span>Folding caught $n_scene_folds clips that continue a scene across an
+    episode break, but misses repeats inside one episode (#9/#10).</span></div>
+  <div class="fail"><b>Weak trailers</b><span>3 of 4 cross-episode cuts came out under 20 s, and the one that survived
+    skips the Duke reveal, which is the whole title.</span></div>
+  <div class="fail"><b>Empty episodes</b><span>The LLM found nothing in 9 episodes (6 of them gpt-oss-20b's), including
+    ep 31's red-hot iron. The rules caught that one.</span></div>
+  <div class="fail"><b>Text only</b><span>It can't see whether a slap lands. The judge reads a transcript too, and may
+    share the rules' taste for loud lines.</span></div>
+</div>
+
+<!-- ============================================================== 6 AI -->
+<h2 id="ai"><span class="n">6</span>AI tools I used, and where they got it wrong</h2>
+<div class="aigrid">
+  <div class="card"><h3>What I used</h3>
+    <ul class="tools">
+      <li><b>Claude Code</b> as a pair programmer: code, prompts, this layout</li>
+      <li><b>Qwen 3.8 27B</b> and <b>gpt-oss-20b</b> (Groq) to scout episodes</li>
+      <li><b>gpt-oss-120b</b> (Groq) as the blind judge</li>
+      <li><b>Gemini 3.5 Flash</b>, tried early; free tier stops at ~20 requests a day</li>
+    </ul></div>
+  <div class="card wrong"><h3>Where it went wrong: the judge was the wrong viewer</h3>
+    <div class="wrongrow">
+      <p>The first judge prompt, which Claude drafted and I accepted, said <i>"a 24-year-old scrolling TikTok, judge
+      harshly"</i>. It scored all $v1_n test clips $v1_range out of 10, and gave the altar betrayal, the strongest hook in
+      the show, $v1_altar/10 for being "too melodramatic". Melodrama is the product; I'd picked the wrong viewer. Rewritten
+      as a genre fan with score anchors, the same episodes scored $v2_range and the altar scene $v2_altar.</p>
+      $judge_chart
+    </div>
+    <p class="small"><b>Smaller misses:</b> two of Claude's default models were already retired; its first rate limiter ran
+    Groq at half speed; and its fallback logic re-asked a model on a re-run instead of reusing the saved answer (fixed).</p>
+  </div>
+</div>
+
+<div class="foot"><span>Every number above is generated from the run's output files by <code>docs/build_doc.py</code>, so the doc and the raw outputs can't disagree.</span><span>$name</span></div>
+</body>
+</html>
