@@ -4,7 +4,7 @@ Reads microdrama screenplays and finds the best 20–60 second promo clips in th
 
 An editor still makes the final call. The tool does the first pass, so the editor reviews a ranked shortlist instead of watching 100 minutes of footage.
 
-Built for Kuku's AI Generalist assignment (Problem 1). The 2-page solution doc is generated from a finished run with `python docs/build_doc.py <run_dir>` (needs Chrome or Edge to print the PDF). It's submitted separately and isn't committed, because it quotes the scripts.
+Built for Kuku's AI Generalist assignment (Problem 1). The 2-page solution doc is generated from a finished run with `python docs/build_doc.py <run_dir>` (needs `pip install pymupdf` and Chrome or Edge to print the PDF). It's submitted separately and isn't committed, because it quotes the scripts.
 
 ## Run it
 
